@@ -102,33 +102,7 @@
 <body>
 
   <main>
-    <section>
-      <div id="container">
-        
-        <h2>Force Portraits</h2>
-        <p>Force Portraits are visual representations of the various forces a runner experiences. They can show us how
-          forces change throughout a run, how they interact with each other, and how they impact the runner's
-          performance and safety.</p>
-      </div>
-    </section>
-    <section>
-      <div id="container">
-        
-        <h2>Magnitudes</h2>
-        <p>Forces are represented as vectors in Force Portraits. The direction of the vector shows the direction of the
-          force, while its length represents the magnitude of the force.</p>
-      </div>
-
-    </section>
-    <section>
-      <div id="container">
-        
-        <h2>Your Creation</h2>
-        <p>Forces are represented as vectors in Force Portraits. The direction of the vector shows the direction of the
-          force, while its length represents the magnitude of the force.</p>
-      </div>
-
-    </section>
+    
     <canvas id="webgl"></canvas>
 
   </main>
@@ -188,12 +162,15 @@
     
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.update();
+      controls.enableDamping = false;
+      controls.enablePan=false;
+      controls.enableZoom = false;
 
       return { scene, camera, renderer, controls };
     }
 
     function createLine() {
-      const material = new THREE.LineBasicMaterial({ color: "rgba(238, 160, 68, 1)" });
+      const material = new THREE.LineBasicMaterial({ color: "rgba(224, 114, 45, 1)" });
       const line = new THREE.Line(new THREE.BufferGeometry(), material);
       return line;
     }
