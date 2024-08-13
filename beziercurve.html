@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Three.js Bloom Effect</title>
+  <link href='https://fonts.googleapis.com/css?family=Bai Jamjuree' rel='stylesheet'>
+  <link href='https://fonts.googleapis.com/css?family=Poppins' rel='stylesheet'>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100&display=swap');
+  </style>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300&family=Poppins:wght@100&display=swap');
+  </style>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-family: "Bai Jamjuree", Courier, monospace;
+      background: #1e1a20;
+
+    }
+
+    #webgl {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: -1;
+      outline: none;
+    }
+
+    section {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding-left: 10%;
+      padding-right: 10%;
+
+      color: #ffffff;
+      gap: 40px;
+    }
+
+
+    section:nth-child(even) {
+      text-align: right;
+    }
+
+    #container {
+      padding-bottom: 10%;
+    }
+
+    p {
+      font-size: 2.5vmin;
+      font-weight: 300;
+    }
+
+    h2 {
+      font-size: 5vmin;
+      font-weight: 900;
+      margin-bottom: 15px;
+    }
+
+    #buttons {
+      display: inline-flex;
+      align-items: flex-start;
+      gap: 42.584px;
+      top: 10px;
+      bottom: 0;
+      left: 10px;
+      right: 0;
+    }
+
+    button {
+      background: none;
+      color: #ffffff;
+      text-transform: uppercase;
+      padding: 20.468px 23.392px;
+      font-family: Poppins;
+      font-weight: 100;
+      justify-content: center;
+      align-items: center;
+      gap: 9.747px;
+      border-radius: 9.747px;
+      border: 0.975px solid rgb(143, 143, 143);
+      box-shadow: 0px 3.89867px 3.89867px 0px rgba(0, 0, 0, 0.25);
+    }
+
+    hr.rounded {
+      border-top: 4px solid rgb(46, 46, 46);
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main>
+    <section>
+      <div id="container">
+        
+        <h2>Force Portraits</h2>
+        <p>Force Portraits are visual representations of the various forces a runner experiences. They can show us how
+          forces change throughout a run, how they interact with each other, and how they impact the runner's
+          performance and safety.</p>
+      </div>
+    </section>
+    <section>
+      <div id="container">
+        
+        <h2>Magnitudes</h2>
+        <p>Forces are represented as vectors in Force Portraits. The direction of the vector shows the direction of the
+          force, while its length represents the magnitude of the force.</p>
+      </div>
+
+    </section>
+    <section>
+      <div id="container">
+        
+        <h2>Your Creation</h2>
+        <p>Forces are represented as vectors in Force Portraits. The direction of the vector shows the direction of the
+          force, while its length represents the magnitude of the force.</p>
+      </div>
+
+    </section>
+    <canvas id="webgl"></canvas>
+
+  </main>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.149.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.149.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://code.createjs.com/1.0.0/tweenjs.min.js"></script>
+  <script type="module">
+
+    import * as THREE from "three";
+    import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+    import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+    import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GUI } from "three/addons/libs/lil-gui.module.min.js";
+
+    const params = {
+      threshold: 0,
+      strength: 1,
+      radius: 0
+    };
+
+    let scrollY = window.scrollY
+    let currentSection = 0
+
+    const cursor = {}
+    cursor.x = 0
+    cursor.y = 0
+
+    const sizes = {
+      width: window.innerWidth,
+      height: window.innerHeight
+    }
+
+    let cameraPosition = new THREE.Vector3(0, 0, 8);
+
+    function initScene() {
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const canvas = document.getElementById("webgl")
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+      renderer.setClearAlpha(0);
+
+      camera.position.copy(cameraPosition); // Set initial camera position
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+    
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.update();
+
+      return { scene, camera, renderer, controls };
+    }
+
+    function createLine() {
+      const material = new THREE.LineBasicMaterial({ color: "rgba(238, 160, 68, 1)" });
+      const line = new THREE.Line(new THREE.BufferGeometry(), material);
+      return line;
+    }
+
+    function createArrow() {
+      const arrowGeometry = new THREE.SphereGeometry(0.05, 32, 16);
+      const arrowMaterial = new THREE.MeshBasicMaterial({ color: "rgba(238, 160, 68, 1)" });
+      const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
+      arrow.position.set(0, 0, 0);
+      return arrow;
+    }
+
+    function addAxesHelper(scene) {
+      const axesHelper = new THREE.AxesHelper(5);
+      scene.add(axesHelper);
+    }
+
+  
+
+    function setupBloomComposer(scene, camera) {
+      const bloomPass = new UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        0.238,
+        1.4,
+        1
+      );
+
+      bloomPass.threshold = params.threshold;
+      bloomPass.strength = params.strength;
+      bloomPass.radius = params.radius;
+
+      const gui = new GUI();
+      const bloomFolder = gui.addFolder("bloom");
+
+      bloomFolder.add(params, "threshold", 0.0, 1.0).onChange(value => {
+        bloomPass.threshold = Number(value);
+      });
+
+      bloomFolder.add(params, "strength", 0.0, 3.0).onChange(value => {
+        bloomPass.strength = Number(value);
+      });
+
+      gui
+        .add(params, "radius", 0.0, 1.0)
+        .step(0.01)
+        .onChange(value => {
+          bloomPass.radius = Number(value);
+        });
+
+      const renderPass = new RenderPass(scene, camera);
+      const composer = new EffectComposer(renderer);
+      composer.addPass(renderPass);
+      composer.addPass(bloomPass);
+
+      return composer;
+    }
+
+    function handleWindowResize(camera, renderer) {
+      window.addEventListener('resize', function () {
+        sizes.width = window.innerWidth;
+        sizes.height = window.innerHeight;
+
+        camera.aspect = sizes.width / sizes.height;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(sizes.width, sizes.height);
+      });
+    }
+
+    function handleMouseMove(camera, renderer) {
+
+      window.addEventListener('mousemove', function (event) {
+        cursor.x = event.clientX / sizes.width - 0.5
+        cursor.y = event.clientY / sizes.height - 0.5
+      })
+    }
+
+    function handleNewSection(camera, renderer) {
+
+      let ticking = false
+
+      window.addEventListener('scroll', () => {
+        scrollY = window.scrollY
+
+        function updateCameraPosition() {
+          const newSection = Math.round(scrollY / sizes.height);
+
+          if (newSection !== currentSection) {
+            currentSection = newSection;
+
+            //console.log(newSection);
+
+            let targetPosition;
+
+            switch (currentSection) {
+              case 0:
+                targetPosition = new THREE.Vector3(0, 0, 8);
+                break;
+              case 1:
+                targetPosition = new THREE.Vector3(1, 8, 0);
+                break;
+              case 2:
+                targetPosition = new THREE.Vector3(8, 0, 0);
+                break;
+              // Add more cases as needed
+
+              default:
+                // Default case
+                targetPosition = new THREE.Vector3(0, 0, 8);
+            }
+
+            gsap.to(camera.position, {
+              duration: 3,
+              x: targetPosition.x,
+              y: targetPosition.y,
+              z: targetPosition.z,
+              ease: "power1.inOut",
+              onStart: () => {
+                document.body.style.pointerEvents = 'none'; // Disable pointer events
+              },
+              onComplete: () => {
+
+                document.body.style.pointerEvents = 'auto'; // Enable pointer events after animation
+                //cameraPosition = new THREE.Vector3(targetPosition.x, targetPosition.y, targetPosition.z);
+
+                composer.render();
+
+              },
+            });
+
+          }
+        }
+
+        function onScroll() {
+          if (!ticking) {
+            window.requestAnimationFrame(() => {
+              updateCameraPosition();
+              ticking = false;
+            });
+
+            ticking = true;
+          }
+        }
+
+        window.addEventListener("scroll", onScroll);
+
+      })
+    }
+
+    function startAnimation(validVectors, line, arrow, controls, composer) {
+      const tension = 0;
+      const curve = new THREE.CatmullRomCurve3(validVectors, undefined, tension);
+      const animationDuration = 20;
+      const animationSteps = 1000 * 5;
+      const animationStepDuration = animationDuration / animationSteps;
+      let currentStep = 0;
+      const clock = new THREE.Clock()
+      let previousTime = 0
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        if (currentStep < animationSteps) {
+          const t = currentStep / animationSteps;
+          const endIndex = Math.min(Math.floor(t * validVectors.length), validVectors.length - 1);
+          const curvePoints = validVectors.slice(0, endIndex + 1);
+
+          line.geometry.setFromPoints(curvePoints);
+
+          const arrowPosition = new THREE.Vector3();
+          const positionAttribute = line.geometry.attributes.position;
+          arrowPosition.fromBufferAttribute(positionAttribute, positionAttribute.count - 1);
+          arrow.position.copy(arrowPosition);
+
+          const direction = arrowPosition.clone().sub(new THREE.Vector3(0, 0, 0)).normalize();
+          arrow.rotation.setFromRotationMatrix(new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), direction, new THREE.Vector3(0, 1, 0)));
+
+          currentStep++;
+        }
+
+        const elapsedTime = clock.getElapsedTime()
+        const deltaTime = elapsedTime - previousTime
+        previousTime = elapsedTime
+
+        const parallaxX = cursor.x * 8
+        const parallaxY = - cursor.y * 8
+
+        camera.position.x += (parallaxX - camera.position.x) * 5 * deltaTime
+        camera.position.y += (parallaxY - camera.position.y) * 5 * deltaTime
+
+        controls.update();
+        composer.render();
+      }
+
+      animate();
+    }
+
+
+    // Main execution
+    const { scene, camera, renderer, controls } = initScene();
+    const line = createLine();
+    const arrow = createArrow();
+
+
+    scene.add(line);
+    scene.add(arrow);
+
+    handleWindowResize(camera, renderer);
+    handleMouseMove(camera, renderer);
+    //handleNewSection(camera, renderer);
+
+    const composer = setupBloomComposer(scene, camera);
+
+    Papa.parse("https://shanepatrickroach.github.io/force-portrait-csv-files/shane.csv", {
+      download: true,
+      header: true,
+      dynamicTyping: true,
+      complete: function (results) {
+        const data = results.data;
+        
+
+        console.log(console.log(data.length))
+        if (data.length === 0) {
+          console.error("CSV data is empty or not successfully parsed.");
+          return;
+        }
+
+        const validVectors = data
+          .map(point => {
+            if (point.x !== undefined && point.y !== undefined && point.z !== undefined) {
+              const rotatedVector = new THREE.Vector3(-point.y, point.x, point.z);
+              return rotatedVector;
+            }
+            return null;
+          })
+          .filter(vector => vector !== null);
+
+        if (validVectors.length === 0) {
+          console.error("No valid vectors found. Check your CSV data for missing values.");
+          return;
+        }
+
+        // Add buttons after CSV data is loaded
+        startAnimation(validVectors, line, arrow, controls, composer);
+      }
+
+    });
+
+
+    function oscillateCamera(camera, composer) {
+      gsap.to(camera.position, {
+        duration: 6, // Adjust the duration as needed
+        repeat: -1, // Infinite repeat
+        yoyo: true, // Oscillate back and forth
+        ease: "power1.inOut",
+        x: "+=0", // Adjust the values for the desired oscillation range
+        y: "+=0",
+        z: "+=1",
+        onUpdate: () => {
+          composer.render(); // Re-render after changing the camera position
+        },
+      });
+    }
+
+
+
+
+    function handleViewButtons(camera, composer) {
+
+      function setCameraPosition(position) {
+        gsap.to(camera.position, {
+          duration: 3, // 1 second duration for the transition
+          x: position.x,
+          y: position.y,
+          z: position.z,
+          ease: "power1.inOut",
+          onUpdate: () => {
+            composer.render(); // Re-render after changing the camera position
+          },
+        });
+      }
+
+      const frontButton = document.getElementById("frontView");
+      frontButton.textContent = "Front View";
+      frontButton.addEventListener("click", () => setCameraPosition(new THREE.Vector3(0, 0, 10)));
+
+
+      const sideButton = document.getElementById("sideView");
+      sideButton.textContent = "Side View";
+      sideButton.addEventListener("click", () => setCameraPosition(new THREE.Vector3(10, 0, 0)));
+
+
+      const rearButton = document.getElementById("rearView");
+      rearButton.textContent = "Rear View";
+      rearButton.addEventListener("click", () => setCameraPosition(new THREE.Vector3(0, 0, -10)));
+
+
+      const topButton = document.getElementById("topView");
+      topButton.textContent = "Top View";
+      topButton.addEventListener("click", () => setCameraPosition(new THREE.Vector3(0, 10, 0)));
+
+    }
+
+
+
+
+
+
+
+
+  </script>
+</body>
+
+</html>
